@@ -132,7 +132,7 @@ ui <- fluidPage(
                                <br/> - Nadson Ângelo, 
                                <br/> - Stephane Fernanda e 
                                <br/> - Rafael Orlandi; 
-                               <br/> ambos da UFRN, 
+                               <br/> todos da UFRN, 
                                        para a disciplina de Práticas Atuariais em Pensões, ministrada pela docente
                                        Jordana Cristina de Jesus, tendo relevância apenas para fins de prática acadêmica, 
                                        colocando em exercício o conteúdo ministrado em aulas.<br/> <br/>")))),
