@@ -8,9 +8,14 @@ library(readxl)
 library(dplyr)
 
 # Baixando a Tabua-BR-EMS da SUSEP
-tmp = tempfile(fileext = ".xlsx")
-url = "http://www.susep.gov.br/setores-susep/cgpro/copep/Tabuas%20BR-EMS%202010%202015%202021-010721.xlsx"
-download.file(url, destfile = tmp, quiet = T)
+tmp1 = tempfile(fileext = ".xlsx")
+tmp2 = tempfile(fileext = ".xls")
+
+url1 = "http://www.susep.gov.br/setores-susep/cgpro/copep/Tabuas%20BR-EMS%202010%202015%202021-010721.xlsx"
+url2 = "https://www.gov.br/trabalho-e-previdencia/pt-br/assuntos/previdencia-no-servico-publico/atuaria/arquivos/2020/tabuas_de_mortalidade_ibge_2019_extrapoladas-mps.xls"
+
+download.file(url1, destfile = tmp1, quiet = T) # Tábua BR-EMS
+download.file(url2, destfile = tmp2, quiet = T) # Tábua IBGE 2019 extrapolada
 
 # a) Pagamento Único
 pgtoUnico = function(Beneficio, idadeIni, idadeFim, Taxa, Tabela){
@@ -23,7 +28,7 @@ pgtoUnico = function(Beneficio, idadeIni, idadeFim, Taxa, Tabela){
     11/24 * (1 - nEx)
   
   # Prêmio
-  P = Beneficio * nEx / a12x_n
+  P = Beneficio * nEx / (a12x_n * 12)
   
   return(P)
   
@@ -53,7 +58,7 @@ rendaMT = function(Beneficio, idadeIni, idadeFim, Taxa, Tabela, Tempo){
   # Compromisso da Seguradora
   nEx = 1 / (1 + Taxa/100)^(idadeFim - idadeIni) * Tabela[Tabela[,1] == idadeFim,2] / Tabela[Tabela[,1] == idadeIni,2]
   tEr = 1 / (1 + Taxa/100)^(Tempo) * Tabela[Tabela[,1] == (idadeFim + Tempo),2] / Tabela[Tabela[,1] == idadeFim,2]
-  a12r_t = ((Tabela[Tabela[,1] == idadeFim,5] - Tabela[Tabela[,1] == (idadeFim+Tempo),5]) / Tabela[Tabela[,1] == idadeIni, 4]) - 
+  a12r_t = ((Tabela[Tabela[,1] == idadeFim,5] - Tabela[Tabela[,1] == (idadeFim+Tempo),5]) / Tabela[Tabela[,1] == idadeFim, 4]) - 
     (11/24 * (1 - tEr))
   
   # Compromisso do Segurado
@@ -139,7 +144,9 @@ ui <- fluidPage(
                       fluidRow(
                         h4(strong(HTML("Premissas Utilizadas: <br/>"))),
                         strong("Tábua de Vida: "),
-                        em(HTML("BR-EMS 2020, pois reflete a realidade do mercado segurador no Brasil. <br/>")),
+                        em(HTML("BR-EMS 2020, pois reflete a realidade de sobrevivência no mercado segurador no Brasil. 
+                                Para fins de comparação foi adicionado a tabela IBGE 2019 Extrapolada, 
+                                que retrata o padrão médio de sobrevivência do brasileiro. <br/>")),
                         strong("Taxa de Juros: "),
                         em(HTML("6,4% (Média do CDI entre 01/01/2019 a 20/04/2022)."))
                       ),
@@ -160,6 +167,7 @@ ui <- fluidPage(
              tabPanel("Simulador",
                       sidebarLayout(
                         sidebarPanel(width = 4,
+                                     selectInput("tabua", "Selecione a Tábua de Vida", choices = c("BR-EMS (SUSEP)", "IBGE 2019 Extrapolada")),
                                      selectInput("seguro", "Seguro dotal puro - Pago no momento de elegibilidade", choices = pagamentoUnico),
                                      
                                      selectInput("cobertura", "Coberturas para aposentadoria", choices = coberturas),
@@ -199,25 +207,44 @@ server <- function(input, output) {
   observeEvent(input$simular,{
     # Lendo as tábuas no R
     tabua = list()
-    for(i in 2:5){
+    
+    if (input$tabua == "BR-EMS (SUSEP)"){
+      for(i in c(2:5)){
+        
+        a = readxl::read_excel(tmp1, sheet = i, skip = 4)
+        a = a[,-c(2,3,4,6)]
+        
+        a$V = (1/(1+6.4/100))^a$Idade
+        a$Dx = a$V * a$lx
+        a$Nx = do.call(rbind, lapply(1:nrow(a), FUN = function(rows){colSums(a[rows:nrow(a),"Dx"])}))[,1]
+        a$ax = a$Nx/a$Dx
+        
+        tabua[[i-1]] = a
+      }
+      tabua = tabua[c(1,3)]
+      names(tabua) = c("Masculino", "Feminino")
       
-      a = readxl::read_excel(tmp, sheet = i, skip = 4)
-      a = a[,-c(2,3,4,6)]
-      
-      a$V = (1/(1+input$taxa/100))^a$Idade
-      a$Dx = a$V * a$lx
-      a$Nx = do.call(rbind, lapply(1:nrow(a), FUN = function(rows){colSums(a[rows:nrow(a),"Dx"])}))[,1]
-      a$ax = a$Nx/a$Dx
-      
-      tabua[[i-1]] = a
+    } else {
+      for (i in 1:2){
+        
+        a = readxl::read_excel(tmp2, sheet = i, skip = 3)
+        a = a[,-c(3,4)]
+        names(a)[1:2] = c("Idade", "lx")
+        
+        a$V = (1/(1+5.4/100))^a$Idade
+        a$Dx = a$V * a$lx
+        a$Nx = do.call(rbind, lapply(1:nrow(a), FUN = function(rows){colSums(a[rows:nrow(a),"Dx"])}))[,1]
+        a$ax = a$Nx/a$Dx
+        
+        tabua[[i]] = a
+      }
+      names(tabua) = c("Feminino",
+                       "Masculino")
     }
-    
-    names(tabua) = c("Masculino - Sob", "Masculino - Mort",
-                     "Feminino - Sob", "Feminino - Mort")
-    
+
     # Output do prêmio baseado nas entradas (inputs)
     
-    Tabua = if(input$sexo == "Masculino"){Tabua = tabua[[1]] %>% data.frame()} else {Tabua = tabua[[3]] %>% data.frame()}
+    Tabua = if(input$sexo == "Masculino"){Tabua = tabua[["Masculino"]] %>% data.frame()} else {Tabua = tabua[["Feminino"]] %>% data.frame()}
     
     # a) Pagamento Único
     
@@ -282,7 +309,7 @@ server <- function(input, output) {
                               input$prazoM, " anos.")
     }
     
-    Premio = paste0("O contratante realizará pagamentos mensais de: <br/><br/> R$ ", 
+    Premio = paste0("Para a aposentadoria, o contratante realizará pagamentos mensais de: <br/><br/> R$ ", 
                     format(round(PremioAP, 2), nsmall = 2, big.mark = ".", decimal.mark = ","),
                     "<br/><br/> Desde a entrada na idade de ", input$idadeIni, " anos",
                     " até a idade de ", input$idadeFim - 1, " anos. ",
