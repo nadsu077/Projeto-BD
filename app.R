@@ -19,7 +19,7 @@ download.file(url2, destfile = tmp2, quiet = T) # Tábua IBGE 2019 extrapolada
 
 # a) Pagamento Único
 pgtoUnico = function(Beneficio, idadeIni, idadeFim, Taxa, Tabela){
-  
+
   # Compromisso da Seguradora
   nEx = 1 / (1 + Taxa/100)^(idadeFim - idadeIni) * Tabela[Tabela[,1] == idadeFim,2] / Tabela[Tabela[,1] == idadeIni,2]
   
@@ -74,11 +74,11 @@ rendaMT = function(Beneficio, idadeIni, idadeFim, Taxa, Tabela, Tempo){
 
 # d) Renda Mensal Vitalícia com Prazo Mínimo Garantido
 rendaMVcPMG = function(Beneficio, idadeIni, idadeFim, Taxa, Tabela, Tempo){
-  
+
   # Compromisso da Seguradora
   nEx = 1 / (1 + Taxa/100)^(idadeFim - idadeIni) * Tabela[Tabela[,1] == idadeFim,2] / Tabela[Tabela[,1] == idadeIni,2]
   a12t = 1/12 * ((1-(1/(1+Taxa/100)^Tempo)) / (1-(1/(1+Taxa/100)^(1/12))))
-  a12rt = Tabela[Tabela[,1] == (idadeIni + Tempo + 1),6]
+  a12rt = (Tabela[Tabela[,1] == (idadeFim + Tempo),6]-11/24)
   tEr = 1 / (1 + Taxa/100)^(Tempo) * Tabela[Tabela[,1] == (idadeFim + Tempo),2] / Tabela[Tabela[,1] == idadeFim,2]
   
   a12x_m_ = a12t + a12rt * tEr
@@ -172,11 +172,11 @@ ui <- fluidPage(
                                      
                                      selectInput("cobertura", "Coberturas para aposentadoria", choices = coberturas),
                                      conditionalPanel(condition = "input.cobertura == 'Renda Mensal Temporária'",
-                                                      numericInput("tempo", "Prazo dos Pagamentos Temporários", 15, min = 1, max = 100)),
+                                                      numericInput("tempo", "Prazo dos Pagamentos Temporários", 15, min = 1, max = 15)),
                                      conditionalPanel(condition = "input.cobertura == 'Renda Mensal Vitalícia com Prazo Mínimo Garantido'",
-                                                      numericInput("prazoM", "Prazo Mínimo Garantido", 15, min = 1, max = 100)),
+                                                      numericInput("prazoM", "Prazo Mínimo Garantido", 15, min = 1, max = 15)),
                                      conditionalPanel(condition = "input.cobertura == 'Renda Mensal por Prazo Certo'",
-                                                      numericInput("prazoC", "Prazo Certo", 15, min = 1, max = 100)),
+                                                      numericInput("prazoC", "Prazo Certo", 15, min = 1, max = 15)),
                                     
                                      selectInput("sexo", "Sexo ", choices = sexo),
                                      
@@ -214,7 +214,7 @@ server <- function(input, output) {
         a = readxl::read_excel(tmp1, sheet = i, skip = 4)
         a = a[,-c(2,3,4,6)]
         
-        a$V = (1/(1+6.4/100))^a$Idade
+        a$V = (1/(1+input$taxa/100))^a$Idade
         a$Dx = a$V * a$lx
         a$Nx = do.call(rbind, lapply(1:nrow(a), FUN = function(rows){colSums(a[rows:nrow(a),"Dx"])}))[,1]
         a$ax = a$Nx/a$Dx
@@ -231,7 +231,7 @@ server <- function(input, output) {
         a = a[,-c(3,4)]
         names(a)[1:2] = c("Idade", "lx")
         
-        a$V = (1/(1+5.4/100))^a$Idade
+        a$V = (1/(1+input$taxa/100))^a$Idade
         a$Dx = a$V * a$lx
         a$Nx = do.call(rbind, lapply(1:nrow(a), FUN = function(rows){colSums(a[rows:nrow(a),"Dx"])}))[,1]
         a$ax = a$Nx/a$Dx
