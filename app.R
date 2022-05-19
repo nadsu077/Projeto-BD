@@ -340,10 +340,10 @@ server <- function(input, output) {
     
     not = c(
       "{}_{n}E_x",
-      "\\ddot{a}^{(12)}_r * {}_{n}E_x",
-      "\\ddot{a}^{(12)}_{r:\\overline{t|}} * {}_{n}E_x",
-      "\\ddot{a}^{(12)}_{\\overline{r:\\overline{t|}}} * {}_{n}E_x",
-      "\\ddot{a}^{(12)}_{\\overline{n|}} * {}_{n}E_x"
+      "12 * \\ddot{a}^{(12)}_r * {}_{n}E_x",
+      "12 * \\ddot{a}^{(12)}_{r:\\overline{t|}} * {}_{n}E_x",
+      "12 * \\ddot{a}^{(12)}_{\\overline{r:\\overline{t|}}} * {}_{n}E_x",
+      "12 * \\ddot{a}^{(12)}_{\\overline{t|}} * {}_{n}E_x"
     )
     
     descr = c(
@@ -351,15 +351,15 @@ server <- function(input, output) {
       "\\text{Pago após a aposentadoria mensalmente até a data de óbito}",
       "\\text{Renda paga temporariamente até o beneficiário vir a óbito ou existe o fim da temporariedade contratada}",
       "\\text{Renda com pagamento certo nos primeiros t anos e vitalícia após o prazo}", 
-      "\\text{Renda com pagamento certo até n anos}"
+      "\\text{Renda com pagamento certo até t anos}"
     )
     
     form = c(
       "V^n * {}_{n}p_x",
-      "(\\ddot{a}_r - \\frac{11}{24}) * {}_{n}E_x",
-      "\\Big[ \\ddot{a}_{r:\\overline{t|}} - \\frac{11}{24} * (1 - {}_{t}E_r) \\Big] * {}_{n}E_x",
-      "\\Big[ \\ddot{a}^{(12)}_{\\overline{t|}} + \\ddot{a}^{(12)}_{r+t} * {}_{t}E_r \\Big] * {}_{n}E_x",
-      "\\frac{1}{12} * \\Big[ \\frac{1 - V^n}{1 - V^{1/12}} \\Big] * {}_{n}E_x")
+      "12 * (\\ddot{a}_r - \\frac{11}{24}) * {}_{n}E_x",
+      "12 * \\Big[ \\ddot{a}_{r:\\overline{t|}} - \\frac{11}{24} * (1 - {}_{t}E_r) \\Big] * {}_{n}E_x",
+      "12 * \\Big[ \\ddot{a}^{(12)}_{\\overline{t|}} + \\ddot{a}^{(12)}_{r+t} * {}_{t}E_r \\Big] * {}_{n}E_x",
+      "12 * \\frac{1}{12} * \\Big[ \\frac{1 - V^t}{1 - V^{1/12}} \\Big] * {}_{n}E_x")
     
     tab = data.frame(Cobertura = cob,
                      `Notação` = not,
